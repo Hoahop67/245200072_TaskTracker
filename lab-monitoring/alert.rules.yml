@@ -1,0 +1,11 @@
+groups:
+  - name: container_alerts
+    rules:
+      - alert: ContainerDown
+        expr: absent(container_last_seen{name=~".*wordpress.*"})
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container WordPress bị sập!"
+          description: "Không tìm thấy dữ liệu từ container wordpress trong 10 giây qua."

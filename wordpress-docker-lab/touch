@@ -1,0 +1,14 @@
+# ==================== MySQL ====================
+                MYSQL_ROOT_PASSWORD=SuperSecretRootPass123   # Mật khẩu cực mạnh cho tài khoản root
+                MYSQL_DATABASE=wordpress                  # Tên database sẽ tự động tạo
+                MYSQL_USER=wp_user                        # Tên user để WordPress kết nối
+                MYSQL_PASSWORD=wp_password_strong_456        # Mật khẩu của user wp_user
+
+                # ==================== WordPress ====================
+                WORDPRESS_DB_HOST=db                     # Hostname DB (trùng tên service "db" trong compose)
+                WORDPRESS_DB_USER=wp_user                 # User kết nối DB
+                WORDPRESS_DB_PASSWORD=wp_password_strong_456 # Mật khẩu kết nối DB
+                WORDPRESS_DB_NAME=wordpress                # Tên database
+
+                # ==================== Redis (Cache) ====================
+                REDIS_PASSWORD=redis_secure_pass_789       # Mật khẩu cho Redis

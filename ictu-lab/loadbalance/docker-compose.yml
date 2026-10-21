@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  whoami_cluster:
+    image: traefik/whoami
+    deploy:
+      replicas: 3
+    networks:
+      - ictu_proxy_net
+
+networks:
+  ictu_proxy_net:
+    external: true

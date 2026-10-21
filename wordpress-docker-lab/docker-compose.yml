@@ -1,0 +1,29 @@
+services:
+  web:
+    image: php:8.2-apache
+    ports:
+      - "9999:80"
+    volumes:
+      - ./web:/var/www/html
+    networks:
+      - clinic-net
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: clinicdb
+      MYSQL_USER: clinic_user
+      MYSQL_PASSWORD: clinic_pass
+      MYSQL_ROOT_PASSWORD: rootpass
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - clinic-net
+
+networks:
+  clinic-net:
+
+volumes:
+  db-data:

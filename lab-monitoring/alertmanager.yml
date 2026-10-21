@@ -1,0 +1,17 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'telegram-notifications'
+
+receivers:
+  - name: 'telegram-notifications'
+    telegram_configs:
+      - bot_token: '8910177764:AAGmCiAkzCCbl3eMhqSrnZ2qfK82n8_pBCI'
+        chat_id: 8037651295
+        parse_mode: 'HTML'
+        message: "<b>🚨 [CẢNH BÁO HỆ THỐNG]</b>\n<b>Alert:</b> {{ .GroupLabels.alertname }}\n<b>Trạng thái:</b> {{ .Status }}\n<b>Mô tả:</b> {{ .CommonAnnotations.description }}"

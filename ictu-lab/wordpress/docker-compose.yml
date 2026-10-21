@@ -1,0 +1,38 @@
+services:
+  db:
+    image: mariadb:10.6
+    container_name: wp_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ubuntu
+      MYSQL_DATABASE: wp_database
+      MYSQL_USER: hoang
+      MYSQL_PASSWORD: ubuntu
+    networks:
+      - ictu_proxy_net
+    volumes:
+      - wp_db_data:/var/lib/mysql
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wp_app
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: hoang
+      WORDPRESS_DB_PASSWORD: ubuntu
+      WORDPRESS_DB_NAME: wp_database
+    networks:
+      - ictu_proxy_net
+    volumes:
+      - wp_app_data:/var/www/html
+
+networks:
+  ictu_proxy_net:
+    external: true
+
+volumes:
+  wp_db_data:
+  wp_app_data:
