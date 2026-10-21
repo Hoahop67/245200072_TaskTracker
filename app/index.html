@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Tracker Dashboard - Quản lý công việc thông minh</title>
+  <meta name="description" content="Ứng dụng Task Tracker Dashboard quản lý công việc hiện đại, hỗ trợ phân loại mức độ ưu tiên, hạn chót và kết nối REST API Node.js qua Fetch API.">
+  <meta name="keywords" content="task tracker, dashboard, nodejs, express, fetch api, todo list">
+
+  <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <style>
+    /* ==========================================================================
+       DESIGN SYSTEM & CSS VARIABLES
+       ========================================================================== */
+    :root {
+      --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+      /* Dark Theme (Default) */
+      --bg-gradient: radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                         radial-gradient(circle at 85% 85%, rgba(236, 72, 153, 0.12) 0%, transparent 40%),
+                         radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 60%),
+                         #090d16;
+      --bg-color: #090d16;
+      --surface: rgba(18, 24, 38, 0.75);
+      --surface-card: rgba(22, 30, 48, 0.85);
+      --surface-hover: rgba(30, 41, 65, 0.95);
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --surface-border-focus: rgba(99, 102, 241, 0.6);
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.35);
+      --primary-light: rgba(99, 102, 241, 0.15);
+
+      --accent-pink: #ec4899;
+      --accent-cyan: #06b6d4;
+
+      --priority-high: #f43f5e;
+      --priority-high-bg: rgba(244, 63, 94, 0.15);
+      --priority-medium: #f59e0b;
+      --priority-medium-bg: rgba(245, 158, 11, 0.15);
+      --priority-low: #10b981;
+      --priority-low-bg: rgba(16, 185, 129, 0.15);
+
+      --success: #10b981;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+
+      --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+      --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
+      --shadow-lg: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+      --shadow-glow: 0 0 25px var(--primary-glow);
+
+      --transition-fast: 0.18s ease;
+      --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Light Theme */
+    [data-theme="light"] {
+      --bg-gradient: radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+                         radial-gradient(circle at 90% 90%, rgba(236, 72, 153, 0.06) 0%, transparent 40%),
+                         #f1f5f9;
+      --bg-color: #f1f5f9;
+      --surface: rgba(255, 255, 255, 0.85);
+      --surface-card: #ffffff;
+      --surface-hover: #f8fafc;
+      --surface-border: rgba(226, 232, 240, 0.9);
+      --surface-border-focus: rgba(99, 102, 241, 0.5);
+
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-subtle: #94a3b8;
+
+      --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 8px 20px rgba(99, 102, 241, 0.08);
+      --shadow-lg: 0 20px 35px rgba(15, 23, 42, 0.08);
+      --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
+    }
+
+    /* ==========================================================================
+       RESET & BASE STYLES
+       ========================================================================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-gradient);
+      background-color: var(--bg-color);
+      background-attachment: fixed;
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.6;
+      transition: background-color var(--transition-normal), color var(--transition-normal);
+      padding: 24px 16px 40px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ==========================================================================
+       HEADER & NAVIGATION
+       ========================================================================== */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 8px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-icon-wrapper {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--primary), var(--accent-pink));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      box-shadow: var(--shadow-glow);
+      flex-shrink: 0;
+    }
+
+    .brand-text h1 {
+      font-family: var(--font-heading);
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.2;
+    }
+
+    [data-theme="light"] .brand-text h1 {
+      background: linear-gradient(135deg, #0f172a 40%, #475569 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--surface-border);
+      background: var(--surface);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all var(--transition-fast);
+      backdrop-filter: blur(12px);
+    }
+
+    .icon-btn:hover {
+      color: var(--text-main);
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ==========================================================================
+       STATS SUMMARY CARDS
+       ========================================================================== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-sm);
+      transition: transform var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(255, 255, 255, 0.16);
+    }
+
+    .stat-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .stat-value {
+      font-family: var(--font-heading);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.1;
+      margin-top: 4px;
+    }
+
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .stat-icon.blue { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+    .stat-icon.amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .stat-icon.green { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .stat-icon.purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+
+    /* Progress Card */
+    .progress-bar-wrapper {
+      grid-column: 1 / -1;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      backdrop-filter: blur(16px);
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .progress-track {
+      height: 10px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      position: relative;
+    }
+
+    [data-theme="light"] .progress-track {
+      background: #e2e8f0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: var(--radius-full);
+      background: linear-gradient(90deg, var(--primary), var(--accent-cyan));
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    /* ==========================================================================
+       TASK INPUT SECTION (ADD TASK FORM)
+       ========================================================================== */
+    .task-creator-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .task-creator-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--accent-pink), var(--accent-cyan));
+    }
+
+    .form-title {
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-title i {
+      color: var(--primary);
+    }
+
+    .input-form-grid {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .input-form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .input-field-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-field-wrapper i {
+      position: absolute;
+      left: 16px;
+      color: var(--text-subtle);
+      font-size: 16px;
+      pointer-events: none;
+    }
+
+    .custom-input {
+      width: 100%;
+      height: 48px;
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      font-size: 15px;
+      padding: 0 16px 0 46px;
+      outline: none;
+      transition: all var(--transition-fast);
+    }
+
+    .custom-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .custom-select {
+      height: 48px;
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 0 14px;
+      outline: none;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .custom-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .custom-date {
+      height: 48px;
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 0 12px;
+      outline: none;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .custom-date:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .btn-primary {
+      height: 48px;
+      padding: 0 24px;
+      background: linear-gradient(135deg, var(--primary), #4338ca);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: var(--font-heading);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 14px var(--primary-glow);
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #4f46e5, #3730a3);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--primary-glow);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ==========================================================================
+       TOOLBAR (FILTERS, SEARCH & BULK ACTIONS)
+       ========================================================================== */
+    .toolbar-section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .filter-tabs {
+      display: inline-flex;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      padding: 4px;
+      backdrop-filter: blur(12px);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
+    .tab-badge {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .search-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-wrapper i {
+      position: absolute;
+      left: 12px;
+      color: var(--text-subtle);
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 200px;
+      height: 38px;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      color: var(--text-main);
+      font-size: 13px;
+      padding: 0 12px 0 34px;
+      outline: none;
+      transition: all var(--transition-fast);
+    }
+
+    .search-input:focus {
+      width: 240px;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-light);
+    }
+
+    .btn-secondary {
+      height: 38px;
+      padding: 0 14px;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition-fast);
+    }
+
+    .btn-secondary:hover {
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-danger-text {
+      color: var(--danger);
+    }
+
+    .btn-danger-text:hover {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: var(--danger);
+    }
+
+    /* ==========================================================================
+       TASK LIST & TASK ITEM CARD
+       ========================================================================== */
+    .task-list-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .task-item {
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition-normal);
+      animation: slideIn 0.25s ease-out forwards;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .task-item:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: var(--shadow-md);
+    }
+
+    .task-item.completed {
+      opacity: 0.72;
+      background: rgba(18, 24, 38, 0.45);
+    }
+
+    [data-theme="light"] .task-item.completed {
+      background: #f8fafc;
+      opacity: 0.78;
+    }
+
+    .task-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* Custom Checkbox */
+    .checkbox-container {
+      position: relative;
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .checkbox-container input {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      height: 0;
+      width: 0;
+    }
+
+    .checkmark {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 24px;
+      width: 24px;
+      background-color: transparent;
+      border: 2px solid var(--text-subtle);
+      border-radius: 6px;
+      transition: all var(--transition-fast);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .checkbox-container:hover input ~ .checkmark {
+      border-color: var(--primary);
+    }
+
+    .checkbox-container input:checked ~ .checkmark {
+      background-color: var(--success);
+      border-color: var(--success);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    }
+
+    .checkmark i {
+      color: white;
+      font-size: 13px;
+      display: none;
+    }
+
+    .checkbox-container input:checked ~ .checkmark i {
+      display: block;
+    }
+
+    /* Task Details */
+    .task-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .task-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-main);
+      word-break: break-word;
+      transition: all var(--transition-fast);
+    }
+
+    .task-item.completed .task-title {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .task-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .priority-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .priority-badge.high {
+      background: var(--priority-high-bg);
+      color: var(--priority-high);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .priority-badge.medium {
+      background: var(--priority-medium-bg);
+      color: var(--priority-medium);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .priority-badge.low {
+      background: var(--priority-low-bg);
+      color: var(--priority-low);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .due-date-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .due-date-badge.overdue {
+      color: var(--priority-high);
+      font-weight: 600;
+    }
+
+    /* Task Actions */
+    .task-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.85;
+      transition: opacity var(--transition-fast);
+    }
+
+    .task-item:hover .task-actions {
+      opacity: 1;
+    }
+
+    .action-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all var(--transition-fast);
+    }
+
+    .action-btn:hover {
+      background: var(--surface-hover);
+      color: var(--text-main);
+      border-color: var(--surface-border);
+    }
+
+    .action-btn.delete:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    /* ==========================================================================
+       EMPTY STATE & LOADING SPINNER
+       ========================================================================== */
+    .empty-state {
+      background: var(--surface);
+      border: 1px dashed var(--surface-border);
+      border-radius: var(--radius-lg);
+      padding: 48px 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      backdrop-filter: blur(12px);
+    }
+
+    .empty-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(99, 102, 241, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .empty-title {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .empty-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      max-width: 360px;
+    }
+
+    .loading-spinner {
+      padding: 40px;
+      text-align: center;
+      color: var(--primary);
+      font-size: 28px;
+    }
+
+    /* ==========================================================================
+       TOAST NOTIFICATIONS
+       ========================================================================== */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: #1e293b;
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 12px 18px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      pointer-events: auto;
+      animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      max-width: 360px;
+    }
+
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid var(--danger); }
+    .toast.info { border-left: 4px solid var(--primary); }
+
+    @keyframes toastIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes toastOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+
+    /* ==========================================================================
+       MODAL (EDIT TASK)
+       ========================================================================== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      padding: 16px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      animation: modalZoom 0.25s ease-out;
+    }
+
+    @keyframes modalZoom {
+      from { transform: scale(0.94); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    /* Footer info */
+    .app-footer {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-subtle);
+    }
+
+    .app-footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- ==================== HEADER ==================== -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-icon-wrapper">
+          <i class="fa-solid fa-list-check"></i>
+        </div>
+        <div class="brand-text">
+          <h1 id="mainTitle">Task Tracker Dashboard</h1>
+          <div class="brand-subtitle">
+            <span>Ứng dụng quản lý công việc thông minh</span>
+            <span>•</span>
+            <span class="status-badge" id="backendStatus">
+              <span class="status-dot"></span>
+              <span id="backendStatusText">Đang kết nối backend...</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="icon-btn" id="themeToggleBtn" title="Chuyển đổi giao diện Sáng / Tối">
+          <i class="fa-solid fa-moon" id="themeIcon"></i>
+        </button>
+        <button class="icon-btn" id="refreshBtn" title="Làm mới danh sách từ Server">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== STATS OVERVIEW ==================== -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-info">
+          <span class="stat-label">Tổng công việc</span>
+          <span class="stat-value" id="totalTasksCount">0</span>
+        </div>
+        <div class="stat-icon blue">
+          <i class="fa-solid fa-layer-group"></i>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <span class="stat-label">Chưa hoàn thành</span>
+          <span class="stat-value" id="pendingTasksCount">0</span>
+        </div>
+        <div class="stat-icon amber">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <span class="stat-label">Đã hoàn thành</span>
+          <span class="stat-value" id="completedTasksCount">0</span>
+        </div>
+        <div class="stat-icon green">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <span class="stat-label">Tỷ lệ tiến độ</span>
+          <span class="stat-value" id="progressPercentage">0%</span>
+        </div>
+        <div class="stat-icon purple">
+          <i class="fa-solid fa-chart-pie"></i>
+        </div>
+      </div>
+
+      <!-- Linear Progress Bar -->
+      <div class="progress-bar-wrapper">
+        <div class="progress-header">
+          <span>Tiến độ hoàn thành nhiệm vụ</span>
+          <span id="progressRatioText">0 / 0 hoàn thành</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressBarFill"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ADD TASK FORM ==================== -->
+    <section class="task-creator-card">
+      <h2 class="form-title">
+        <i class="fa-solid fa-circle-plus"></i>
+        Thêm công việc mới
+      </h2>
+
+      <form id="taskForm" onsubmit="handleAddTaskSubmit(event)">
+        <div class="input-form-grid">
+          <div class="input-field-wrapper">
+            <i class="fa-solid fa-pencil"></i>
+            <input 
+              type="text" 
+              id="taskInput" 
+              class="custom-input" 
+              placeholder="Nhập tên công việc cần làm... (nhấn Enter để thêm)" 
+              required
+              autocomplete="off"
+            >
+          </div>
+
+          <select id="taskPriority" class="custom-select" title="Độ ưu tiên">
+            <option value="medium">Độ ưu tiên: Trung bình</option>
+            <option value="high">Độ ưu tiên: Cao</option>
+            <option value="low">Độ ưu tiên: Thấp</option>
+          </select>
+
+          <input 
+            type="date" 
+            id="taskDueDate" 
+            class="custom-date" 
+            title="Hạn chót hoàn thành (không bắt buộc)"
+          >
+
+          <button type="submit" id="addTaskBtn" class="btn-primary">
+            <i class="fa-solid fa-plus"></i>
+            <span>Thêm Task</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ==================== TOOLBAR (FILTER & SEARCH) ==================== -->
+    <section class="toolbar-section">
+      <div class="filter-tabs">
+        <button class="tab-btn active" data-filter="all" id="filterAll">
+          <span>Tất cả</span>
+          <span class="tab-badge" id="badgeAll">0</span>
+        </button>
+        <button class="tab-btn" data-filter="active" id="filterActive">
+          <span>Chưa xong</span>
+          <span class="tab-badge" id="badgeActive">0</span>
+        </button>
+        <button class="tab-btn" data-filter="completed" id="filterCompleted">
+          <span>Đã xong</span>
+          <span class="tab-badge" id="badgeCompleted">0</span>
+        </button>
+      </div>
+
+      <div class="toolbar-right">
+        <div class="search-wrapper">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input 
+            type="text" 
+            id="taskSearch" 
+            class="search-input" 
+            placeholder="Tìm kiếm công việc..."
+          >
+        </div>
+
+        <button class="btn-secondary btn-danger-text" id="clearCompletedBtn" title="Xóa tất cả các công việc đã hoàn thành">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>Xóa việc đã xong</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== TASK LIST CONTAINER ==================== -->
+    <main class="task-list-wrapper" id="taskList" aria-live="polite">
+      <!-- Loading state will be rendered initially -->
+      <div class="loading-spinner">
+        <i class="fa-solid fa-circle-notch fa-spin"></i>
+        <div style="font-size: 14px; margin-top: 10px; color: var(--text-muted);">Đang tải danh sách công việc...</div>
+      </div>
+    </main>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="app-footer">
+      <p>Task Tracker Dashboard • Kết nối RESTful API Node.js backend qua Fetch API (/api/tasks)</p>
+    </footer>
+  </div>
+
+  <!-- ==================== MODAL CHỈNH SỬA TASK ==================== -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-pen-to-square" style="color: var(--primary);"></i> Chỉnh sửa công việc</h3>
+        <button class="action-btn" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="editForm" onsubmit="handleEditSubmit(event)">
+        <input type="hidden" id="editTaskId">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div>
+            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 6px;">Tiêu đề công việc:</label>
+            <input type="text" id="editTaskTitle" class="custom-input" style="padding-left: 16px;" required>
+          </div>
+          <div>
+            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 6px;">Mức độ ưu tiên:</label>
+            <select id="editTaskPriority" class="custom-select" style="width: 100%;">
+              <option value="high">Cao</option>
+              <option value="medium">Trung bình</option>
+              <option value="low">Thấp</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 6px;">Hạn chót:</label>
+            <input type="date" id="editTaskDueDate" class="custom-date" style="width: 100%;">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeEditModal()">Hủy bỏ</button>
+          <button type="submit" class="btn-primary" style="height: 38px; padding: 0 18px;">Lưu thay đổi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ==========================================================================
+       JAVASCRIPT LOGIC (FETCH API & UI INTERACTIONS)
+       ========================================================================== -->
+  <script>
+    // Cấu hình URL API backend
+    const API_URL = '/api/tasks';
+
+    // State ứng dụng
+    let tasksState = [];
+    let currentFilter = 'all'; // 'all' | 'active' | 'completed'
+    let searchQuery = '';
+    let isConnectedToBackend = false;
+
+    // Các phần tử DOM chính
+    const taskListEl = document.getElementById('taskList');
+    const taskInputEl = document.getElementById('taskInput');
+    const taskPriorityEl = document.getElementById('taskPriority');
+    const taskDueDateEl = document.getElementById('taskDueDate');
+    const addTaskBtn = document.getElementById('addTaskBtn');
+    const backendStatusEl = document.getElementById('backendStatus');
+    const backendStatusText = document.getElementById('backendStatusText');
+    const taskSearchEl = document.getElementById('taskSearch');
+    const clearCompletedBtn = document.getElementById('clearCompletedBtn');
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    // Stats elements
+    const totalTasksCountEl = document.getElementById('totalTasksCount');
+    const pendingTasksCountEl = document.getElementById('pendingTasksCount');
+    const completedTasksCountEl = document.getElementById('completedTasksCount');
+    const progressPercentageEl = document.getElementById('progressPercentage');
+    const progressRatioText = document.getElementById('progressRatioText');
+    const progressBarFill = document.getElementById('progressBarFill');
+    const badgeAll = document.getElementById('badgeAll');
+    const badgeActive = document.getElementById('badgeActive');
+    const badgeCompleted = document.getElementById('badgeCompleted');
+
+    // ==========================================================================
+    // CÁC HÀM GỌI BACKEND QUA FETCH API (YÊU CẦU ĐỀ BÀI)
+    // ==========================================================================
+
+    /**
+     * 1. GET /api/tasks: Lấy danh sách toàn bộ task từ Backend
+     */
+    async function fetchTasks() {
+      try {
+        const response = await fetch(API_URL, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Mã lỗi HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        tasksState = Array.isArray(data) ? data : [];
+        setBackendStatus(true, 'Backend: Đã kết nối (/api/tasks)');
+        renderTasks();
+      } catch (error) {
+        console.warn('Không thể kết nối đến backend Node.js:', error.message);
+        setBackendStatus(false, 'Chế độ xem trước (Offline / Local)');
+        
+        // Nạp dữ liệu dự phòng từ localStorage nếu chưa có dữ liệu
+        if (tasksState.length === 0) {
+          const cached = localStorage.getItem('task_tracker_offline_data');
+          if (cached) {
+            try { tasksState = JSON.parse(cached); } catch(e) {}
+          } else {
+            // Dữ liệu mẫu demo mặc định
+            tasksState = [
+              {
+                id: 'demo-1',
+                title: 'Chào mừng bạn đến với Task Tracker Dashboard!',
+                priority: 'high',
+                dueDate: new Date().toISOString().split('T')[0],
+                completed: false,
+                createdAt: new Date().toISOString()
+              },
+              {
+                id: 'demo-2',
+                title: 'Khởi động server Node.js: node app/server.js',
+                priority: 'medium',
+                dueDate: '',
+                completed: true,
+                createdAt: new Date().toISOString()
+              }
+            ];
+          }
+        }
+        renderTasks();
+      }
+    }
+
+    /**
+     * 2. POST /api/tasks: Thêm task mới
+     */
+    async function apiCreateTask(newTaskData) {
+      if (isConnectedToBackend) {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(newTaskData)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Lỗi HTTP ${response.status}`);
+        }
+
+        return await response.json();
+      } else {
+        // Fallback offline
+        const localTask = {
+          id: 'local-' + Date.now(),
+          ...newTaskData,
+          completed: false,
+          createdAt: new Date().toISOString()
+        };
+        tasksState.unshift(localTask);
+        saveOfflineTasks();
+        return localTask;
+      }
+    }
+
+    /**
+     * 3. PUT hoặc PATCH /api/tasks/:id: Cập nhật task (hoàn thành hoặc chỉnh sửa)
+     */
+    async function apiUpdateTask(taskId, updatedFields) {
+      if (isConnectedToBackend) {
+        const response = await fetch(`${API_URL}/${taskId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(updatedFields)
+        });
+
+        if (!response.ok) {
+          throw new Error(`Lỗi cập nhật task: HTTP ${response.status}`);
+        }
+
+        return await response.json();
+      } else {
+        // Fallback offline
+        const index = tasksState.findIndex(t => String(t.id) === String(taskId));
+        if (index !== -1) {
+          tasksState[index] = { ...tasksState[index], ...updatedFields };
+          saveOfflineTasks();
+          return tasksState[index];
+        }
+      }
+    }
+
+    /**
+     * 4. DELETE /api/tasks/:id: Xóa task theo ID
+     */
+    async function apiDeleteTask(taskId) {
+      if (isConnectedToBackend) {
+        const response = await fetch(`${API_URL}/${taskId}`, {
+          method: 'DELETE',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Lỗi xóa task: HTTP ${response.status}`);
+        }
+
+        return await response.json();
+      } else {
+        // Fallback offline
+        tasksState = tasksState.filter(t => String(t.id) !== String(taskId));
+        saveOfflineTasks();
+        return { success: true };
+      }
+    }
+
+    /**
+     * 5. DELETE /api/tasks/completed: Xóa tất cả các task đã hoàn thành
+     */
+    async function apiClearCompletedTasks() {
+      if (isConnectedToBackend) {
+        const response = await fetch(`${API_URL}/completed`, {
+          method: 'DELETE',
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if (!response.ok) {
+          // Thử xóa từng task nếu endpoint /completed không hỗ trợ
+          const completedTasks = tasksState.filter(t => t.completed);
+          for (const task of completedTasks) {
+            await apiDeleteTask(task.id);
+          }
+          return { success: true };
+        }
+        return await response.json();
+      } else {
+        tasksState = tasksState.filter(t => !t.completed);
+        saveOfflineTasks();
+        return { success: true };
+      }
+    }
+
+    function saveOfflineTasks() {
+      localStorage.setItem('task_tracker_offline_data', JSON.stringify(tasksState));
+    }
+
+    // ==========================================================================
+    // XỬ LÝ SỰ KIỆN GIAO DIỆN (UI EVENT HANDLERS)
+    // ==========================================================================
+
+    /**
+     * Xử lý gửi form thêm Task
+     */
+    async function handleAddTaskSubmit(e) {
+      e.preventDefault();
+      const title = taskInputEl.value.trim();
+      if (!title) {
+        showToast('Vui lòng nhập tên công việc!', 'error');
+        taskInputEl.focus();
+        return;
+      }
+
+      const priority = taskPriorityEl.value || 'medium';
+      const dueDate = taskDueDateEl.value || null;
+
+      // Hiệu ứng loading nút bấm
+      addTaskBtn.disabled = true;
+      const originalBtnHTML = addTaskBtn.innerHTML;
+      addTaskBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> <span>Đang lưu...</span>';
+
+      try {
+        const newTask = await apiCreateTask({ title, priority, dueDate });
+        if (isConnectedToBackend) {
+          tasksState.unshift(newTask);
+        }
+        
+        // Reset form
+        taskInputEl.value = '';
+        taskDueDateEl.value = '';
+        taskPriorityEl.value = 'medium';
+        taskInputEl.focus();
+
+        renderTasks();
+        showToast('Đã thêm công việc mới thành công!', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Lỗi khi thêm task: ' + err.message, 'error');
+      } finally {
+        addTaskBtn.disabled = false;
+        addTaskBtn.innerHTML = originalBtnHTML;
+      }
+    }
+
+    /**
+     * Chuyển đổi trạng thái Hoàn thành / Chưa hoàn thành
+     */
+    async function toggleTaskStatus(taskId) {
+      const task = tasksState.find(t => String(t.id) === String(taskId));
+      if (!task) return;
+
+      const newCompleted = !task.completed;
+      // Cập nhật giao diện trước (Optimistic UI update)
+      task.completed = newCompleted;
+      renderTasks();
+
+      try {
+        await apiUpdateTask(taskId, { completed: newCompleted });
+        showToast(newCompleted ? 'Đã hoàn thành công việc!' : 'Đã đánh dấu công việc đang làm', 'info');
+      } catch (err) {
+        // Hoàn tác nếu lỗi
+        task.completed = !newCompleted;
+        renderTasks();
+        showToast('Lỗi cập nhật trạng thái: ' + err.message, 'error');
+      }
+    }
+
+    /**
+     * Xóa một task có xác nhận
+     */
+    async function deleteTask(taskId) {
+      const task = tasksState.find(t => String(t.id) === String(taskId));
+      const taskTitle = task ? `"${task.title}"` : 'công việc này';
+
+      if (!confirm(`Bạn có chắc chắn muốn xóa ${taskTitle}?`)) {
+        return;
+      }
+
+      // Xóa optimistic trên UI
+      const previousState = [...tasksState];
+      tasksState = tasksState.filter(t => String(t.id) !== String(taskId));
+      renderTasks();
+
+      try {
+        await apiDeleteTask(taskId);
+        showToast('Đã xóa công việc thành công!', 'success');
+      } catch (err) {
+        // Khôi phục nếu lỗi
+        tasksState = previousState;
+        renderTasks();
+        showToast('Lỗi khi xóa task: ' + err.message, 'error');
+      }
+    }
+
+    /**
+     * Mở modal chỉnh sửa task
+     */
+    function openEditModal(taskId) {
+      const task = tasksState.find(t => String(t.id) === String(taskId));
+      if (!task) return;
+
+      document.getElementById('editTaskId').value = task.id;
+      document.getElementById('editTaskTitle').value = task.title;
+      document.getElementById('editTaskPriority').value = task.priority || 'medium';
+      document.getElementById('editTaskDueDate').value = task.dueDate || '';
+
+      document.getElementById('editModal').classList.add('active');
+      document.getElementById('editTaskTitle').focus();
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+    }
+
+    /**
+     * Xử lý lưu chỉnh sửa task
+     */
+    async function handleEditSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('editTaskId').value;
+      const title = document.getElementById('editTaskTitle').value.trim();
+      const priority = document.getElementById('editTaskPriority').value;
+      const dueDate = document.getElementById('editTaskDueDate').value;
+
+      if (!title) {
+        showToast('Tiêu đề không được để trống!', 'error');
+        return;
+      }
+
+      try {
+        await apiUpdateTask(id, { title, priority, dueDate });
+        const task = tasksState.find(t => String(t.id) === String(id));
+        if (task) {
+          task.title = title;
+          task.priority = priority;
+          task.dueDate = dueDate;
+        }
+        closeEditModal();
+        renderTasks();
+        showToast('Đã cập nhật công việc thành công!', 'success');
+      } catch (err) {
+        showToast('Lỗi cập nhật: ' + err.message, 'error');
+      }
+    }
+
+    /**
+     * Xóa các công việc đã hoàn thành
+     */
+    async function handleClearCompleted() {
+      const completedCount = tasksState.filter(t => t.completed).length;
+      if (completedCount === 0) {
+        showToast('Không có công việc đã xong nào để xóa!', 'info');
+        return;
+      }
+
+      if (!confirm(`Bạn có chắc muốn xóa tất cả ${completedCount} công việc đã hoàn thành?`)) {
+        return;
+      }
+
+      try {
+        await apiClearCompletedTasks();
+        tasksState = tasksState.filter(t => !t.completed);
+        renderTasks();
+        showToast(`Đã xóa ${completedCount} công việc đã hoàn thành!`, 'success');
+      } catch (err) {
+        showToast('Lỗi xóa việc đã xong: ' + err.message, 'error');
+      }
+    }
+
+    // ==========================================================================
+    // RENDER GIAO DIỆN & THỐNG KÊ (RENDER TASKS & STATS)
+    // ==========================================================================
+
+    function renderTasks() {
+      updateStatistics();
+
+      // Lọc danh sách theo filter và search
+      let filtered = tasksState.filter(task => {
+        // Lọc theo trạng thái
+        if (currentFilter === 'active' && task.completed) return false;
+        if (currentFilter === 'completed' && !task.completed) return false;
+
+        // Lọc theo từ khóa tìm kiếm
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          const matchTitle = task.title && task.title.toLowerCase().includes(query);
+          return matchTitle;
+        }
+        return true;
+      });
+
+      // Nếu không có task nào thỏa mãn
+      if (filtered.length === 0) {
+        if (tasksState.length === 0) {
+          taskListEl.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">
+                <i class="fa-solid fa-clipboard-check"></i>
+              </div>
+              <h3 class="empty-title">Chưa có công việc nào!</h3>
+              <p class="empty-desc">Hãy bắt đầu ngày làm việc hiệu quả bằng cách thêm công việc đầu tiên ở khung trên.</p>
+            </div>
+          `;
+        } else {
+          taskListEl.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">
+                <i class="fa-solid fa-filter-circle-xmark"></i>
+              </div>
+              <h3 class="empty-title">Không tìm thấy công việc phù hợp</h3>
+              <p class="empty-desc">Thử tìm kiếm với từ khóa khác hoặc chuyển sang tab lọc "Tất cả".</p>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      // Tạo HTML cho từng task item
+      taskListEl.innerHTML = filtered.map(task => {
+        const isCompleted = Boolean(task.completed);
+        const priority = task.priority || 'medium';
+        const priorityLabels = {
+          high: 'Ưu tiên Cao',
+          medium: 'Ưu tiên TB',
+          low: 'Ưu tiên Thấp'
+        };
+
+        // Format ngày hạn chót
+        let dueDateHTML = '';
+        if (task.dueDate) {
+          const due = new Date(task.dueDate);
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          due.setHours(0,0,0,0);
+          const isOverdue = !isCompleted && due < today;
+
+          const formattedDate = new Date(task.dueDate).toLocaleDateString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+
+          dueDateHTML = `
+            <span class="due-date-badge ${isOverdue ? 'overdue' : ''}">
+              <i class="fa-regular fa-calendar-check"></i>
+              ${isOverdue ? 'Quá hạn: ' : 'Hạn: '}${formattedDate}
+            </span>
+          `;
+        }
+
+        return `
+          <div class="task-item ${isCompleted ? 'completed' : ''}" id="task-${task.id}">
+            <div class="task-left">
+              <label class="checkbox-container" title="${isCompleted ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu hoàn thành'}">
+                <input 
+                  type="checkbox" 
+                  ${isCompleted ? 'checked' : ''} 
+                  onchange="toggleTaskStatus('${task.id}')"
+                >
+                <span class="checkmark">
+                  <i class="fa-solid fa-check"></i>
+                </span>
+              </label>
+
+              <div class="task-content">
+                <span class="task-title">${escapeHTML(task.title)}</span>
+                <div class="task-meta">
+                  <span class="priority-badge ${priority}">
+                    <i class="fa-solid fa-flag"></i>
+                    ${priorityLabels[priority] || priority}
+                  </span>
+                  ${dueDateHTML}
+                </div>
+              </div>
+            </div>
+
+            <div class="task-actions">
+              <button class="action-btn" onclick="openEditModal('${task.id}')" title="Chỉnh sửa công việc">
+                <i class="fa-regular fa-pen-to-square"></i>
+              </button>
+              <button class="action-btn delete" onclick="deleteTask('${task.id}')" title="Xóa công việc này">
+                <i class="fa-regular fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /**
+     * Cập nhật các chỉ số thống kê & thanh tiến độ
+     */
+    function updateStatistics() {
+      const total = tasksState.length;
+      const completed = tasksState.filter(t => t.completed).length;
+      const pending = total - completed;
+      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      totalTasksCountEl.textContent = total;
+      pendingTasksCountEl.textContent = pending;
+      completedTasksCountEl.textContent = completed;
+      progressPercentageEl.textContent = `${percentage}%`;
+      progressRatioText.textContent = `${completed} / ${total} hoàn thành`;
+      progressBarFill.style.width = `${percentage}%`;
+
+      // Cập nhật số trên tab badges
+      badgeAll.textContent = total;
+      badgeActive.textContent = pending;
+      badgeCompleted.textContent = completed;
+    }
+
+    /**
+     * Cập nhật chỉ báo trạng thái kết nối backend
+     */
+    function setBackendStatus(connected, text) {
+      isConnectedToBackend = connected;
+      backendStatusText.textContent = text;
+      if (connected) {
+        backendStatusEl.style.background = 'rgba(16, 185, 129, 0.15)';
+        backendStatusEl.style.color = 'var(--success)';
+        backendStatusEl.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+      } else {
+        backendStatusEl.style.background = 'rgba(245, 158, 11, 0.15)';
+        backendStatusEl.style.color = '#f59e0b';
+        backendStatusEl.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+      }
+    }
+
+    /**
+     * Hiển thị thông báo Toast
+     */
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+
+      const icons = {
+        success: 'fa-solid fa-circle-check',
+        error: 'fa-solid fa-circle-exclamation',
+        info: 'fa-solid fa-circle-info'
+      };
+
+      toast.innerHTML = `
+        <i class="${icons[type] || icons.info}"></i>
+        <span>${escapeHTML(message)}</span>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'toastOut 0.3s forwards';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    /**
+     * Tránh lỗi XSS khi hiển thị text do người dùng nhập
+     */
+    function escapeHTML(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // ==========================================================================
+    // KHỞI TẠO VÀ GẮN SỰ KIỆN (INITIALIZATION & LISTENERS)
+    // ==========================================================================
+
+    // Gắn sự kiện chuyển tab Lọc
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.getAttribute('data-filter');
+        renderTasks();
+      });
+    });
+
+    // Gắn sự kiện tìm kiếm
+    taskSearchEl.addEventListener('input', (e) => {
+      searchQuery = e.target.value.trim();
+      renderTasks();
+    });
+
+    // Nút xóa việc đã xong
+    clearCompletedBtn.addEventListener('click', handleClearCompleted);
+
+    // Nút làm mới danh sách
+    refreshBtn.addEventListener('click', () => {
+      showToast('Đang làm mới danh sách từ Server...', 'info');
+      fetchTasks();
+    });
+
+    // Chuyển đổi Dark / Light Theme
+    themeToggleBtn.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('task_tracker_theme', newTheme);
+      updateThemeIcon(newTheme);
+    });
+
+    function updateThemeIcon(theme) {
+      if (theme === 'light') {
+        themeIcon.className = 'fa-solid fa-sun';
+      } else {
+        themeIcon.className = 'fa-solid fa-moon';
+      }
+    }
+
+    // Nạp theme đã lưu
+    const savedTheme = localStorage.getItem('task_tracker_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+
+    // Đóng modal khi nhấn phím Escape
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeEditModal();
+      }
+    });
+
+    // Bắt đầu nạp dữ liệu khi tải trang
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchTasks();
+    });
+  </script>
+</body>
+</html>
